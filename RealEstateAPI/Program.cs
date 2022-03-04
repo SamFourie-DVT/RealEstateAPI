@@ -1,12 +1,18 @@
 global using RealEstateAPI.Model;
 global using RealEstateAPI.Data;
 global using Microsoft.EntityFrameworkCore;
+using RealEstateData.Data_Access;
+using MediatR;
+using RealEstateData;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
+
+//add services for MediatR
+builder.Services.AddTransient<IAgentDataAccess, AgentDataAccess>();
+builder.Services.AddMediatR(typeof(RealEstateDataMediatREntryPoint).Assembly);
 
 builder.Services.AddDbContext<DataContext>(options =>
 {

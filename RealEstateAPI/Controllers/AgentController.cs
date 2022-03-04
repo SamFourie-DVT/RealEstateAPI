@@ -1,5 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System.Linq;
+﻿using MediatR;
+using Microsoft.AspNetCore.Mvc;
+using RealEstateData.Commands;
+using RealEstateData.Queries;
+
 
 namespace RealEstateAPI.Controllers
 {
@@ -7,23 +10,23 @@ namespace RealEstateAPI.Controllers
     [ApiController]
     public class AgentController : ControllerBase
     {
-        //connects the database
-        private readonly DataContext _context;
+        //declares the variable which we would use for the MediatR
+        private readonly IMediator _mediator;
 
-        public AgentController(DataContext context)
+        public AgentController(IMediator mediator)
         {
-            _context = context;
-
+            _mediator = mediator;   
         }
 
         //gets all the agents
         [HttpGet("GetAll")]
         public async Task<ActionResult<List<EstateAgent>>> Get()
         {
+            
             try
             {
-                //gets all the agents in the database - EstateAgents
-                return Ok(await _context.EstateAgents.ToListAsync());
+                var agents = await _mediator.Send(new GetAllAgentsListQuery());
+                return Ok(agents);
             }
             catch (Exception ex)
             {
@@ -37,11 +40,10 @@ namespace RealEstateAPI.Controllers
         {
             try
             {
-                //gets the agent from the database and checks to see that it exists
-                var agent = await _context.EstateAgents.FindAsync(Id);
+                var agent = await _mediator.Send(new GetAgentByIdQuery(Id));
                 if (agent == null)
-                    return BadRequest("Agent Not Found");
-                //gets all the agents in the database - EstateAgents
+                    return BadRequest("Agent Not Found.");
+
                 return Ok(agent);
             }
             catch (Exception ex)
@@ -56,22 +58,19 @@ namespace RealEstateAPI.Controllers
         {
             try
             {
-                //ensuring that a valid first and last name has been entered.
                 if (agentObject.FirstName == "" || agentObject.LastName == "")
                 {
                     return BadRequest("First and last name must be entered.");
                 }
-                //ensures that the cell phone number is valid
+
                 if (agentObject.CellPhone.Length != 10 || !agentObject.CellPhone.All(char.IsDigit))
                 {
                     return BadRequest("Cell phone field must have 10 numbers.");
                 }
-                //adds the agent to the database
-                _context.EstateAgents.Add(agentObject);
-                await _context.SaveChangesAsync();
 
-                //returns the updated agents in the database
-                return Ok(await _context.EstateAgents.ToListAsync());
+                var newAgent = new AddAgentCommand(agentObject);
+
+                return Ok(await _mediator.Send(newAgent));
             }
             catch (Exception ex)
             {
@@ -81,37 +80,23 @@ namespace RealEstateAPI.Controllers
 
         //Updates an agent by id
         [HttpPut("UpdateAgentById{id}")]
-        public async Task<ActionResult<List<EstateAgent>>> UpdateAgent(EstateAgent agentObject, int id)
+        public async Task<ActionResult<EstateAgent>> UpdateAgent(EstateAgent agentObject, int id)
         {
             try
             {
-                //assigns the agent and checks to make sure it exists
-                var agents = await _context.EstateAgents.FindAsync(id);
-                if (agents == null)
-                    return BadRequest("Agent Not Found");
-
-                //ensuring that a valid first and last name has been entered.
                 if (agentObject.FirstName == "" || agentObject.LastName == "")
                 {
                     return BadRequest("First and last name must be entered.");
                 }
-                //ensures that the cell phone number is valid
+
                 if (agentObject.CellPhone.Length != 10 || !agentObject.CellPhone.All(char.IsDigit))
                 {
                     return BadRequest("Cell phone field must have 10 numbers.");
                 }
 
-                //assigns the new values
-                agents.FirstName = agentObject.FirstName;
-                agents.LastName = agentObject.LastName;
-                agents.CellPhone = agentObject.CellPhone;
-                agents.CountryCode = agentObject.CountryCode;
+                var updatedAgent = new UpdateAgentByIdCommand(agentObject, id);
 
-                //saves the changes
-                await _context.SaveChangesAsync();
-
-                //returns all the agents in the database
-                return Ok(await _context.EstateAgents.ToListAsync());
+                return Ok(await _mediator.Send(updatedAgent));
 
             }
             catch (Exception ex)
@@ -122,23 +107,17 @@ namespace RealEstateAPI.Controllers
 
         //Deletes the agent by Id
         [HttpDelete("DeleteAgentById{Id}")]
-        public async Task<ActionResult<List<EstateAgent>>> DeleteAgent(int Id)
+        public async Task<ActionResult<EstateAgent>> DeleteAgent(int Id)
         {
             try
             {
-                //assigns the agent and checks to make sure it exists
-                var agent = await _context.EstateAgents.FindAsync(Id);
-                if (agent == null)
-                    return BadRequest("Agent Not Found");
+                var agent =  new DeleteAgentByIdCommand(Id);
 
-                //deletes the agent
-                _context.EstateAgents.Remove(agent);
+                var deleteAgent = await _mediator.Send(agent);
+                if (deleteAgent == null)
+                return BadRequest("Agent Not Found");
 
-                //saves the changes
-                await _context.SaveChangesAsync();
-
-                //returns all the agents in the database
-                return Ok(await _context.EstateAgents.ToListAsync());
+                return Ok(deleteAgent);
 
             }
             catch (Exception ex)
