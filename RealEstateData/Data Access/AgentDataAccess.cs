@@ -43,6 +43,11 @@ namespace RealEstateData.Data_Access
         {
             var agent = await _context.EstateAgents.FindAsync(id);
 
+            if (agent == null)
+            {
+                return agent;
+            }
+
             //assigns the new values
             agent.FirstName = agentObject.FirstName;
             agent.LastName = agentObject.LastName;

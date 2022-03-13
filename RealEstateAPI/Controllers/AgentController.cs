@@ -68,9 +68,10 @@ namespace RealEstateAPI.Controllers
                     return BadRequest("Cell phone field must have 10 numbers.");
                 }
 
-                var newAgent = new AddAgentCommand(agentObject);
+                var addAgent = new AddAgentCommand(agentObject);
+                var agentAdded = await _mediator.Send(addAgent);
 
-                return Ok(await _mediator.Send(newAgent));
+                return Ok(agentAdded);
             }
             catch (Exception ex)
             {
@@ -94,9 +95,13 @@ namespace RealEstateAPI.Controllers
                     return BadRequest("Cell phone field must have 10 numbers.");
                 }
 
-                var updatedAgent = new UpdateAgentByIdCommand(agentObject, id);
+                var updateAgent = new UpdateAgentByIdCommand(agentObject, id);
+                var agentUpdated = await _mediator.Send(updateAgent);
 
-                return Ok(await _mediator.Send(updatedAgent));
+                if (agentUpdated == null)
+                    return BadRequest("Agent Not Found.");
+
+                return Ok(agentUpdated);
 
             }
             catch (Exception ex)
@@ -113,11 +118,9 @@ namespace RealEstateAPI.Controllers
             {
                 var agent =  new DeleteAgentByIdCommand(Id);
 
-                var deleteAgent = await _mediator.Send(agent);
-                if (deleteAgent == null)
-                return BadRequest("Agent Not Found");
+                var deletedAgent = await _mediator.Send(agent);
 
-                return Ok(deleteAgent);
+                return Ok(deletedAgent);
 
             }
             catch (Exception ex)
