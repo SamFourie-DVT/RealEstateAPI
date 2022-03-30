@@ -6,7 +6,7 @@ namespace RealEstateAPI.Extensions
 {
     public static class AddJWTTokenServicesExtensions
     {
-        public static void AddJWTTokenServices(IServiceCollection Services, IConfiguration Configuration)
+        public static void AddJWTTokenServices(this IServiceCollection Services, IConfiguration Configuration)
         {
             // Add Jwt Setings
             var bindJwtSettings = new JwtSettings();
